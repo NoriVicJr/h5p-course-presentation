@@ -10,7 +10,6 @@ var H5P = H5P || {};
  * @returns {undefined} Nothing.
  */
 H5P.CoursePresentation = function (params, id, editor) {
-  this.$ = H5P.jQuery(this);
   this.slides = params.slides;
   this.contentId = id;
   this.currentSlideIndex = 0;
@@ -39,8 +38,6 @@ H5P.CoursePresentation = function (params, id, editor) {
     close: 'Close',
     solutionsButtonTitle: 'View solution'
   }, params.l10n !== undefined ? params.l10n : {});
-
-  this.postUserStatistics = (H5P.postUserStatistics === true);
 };
 
 /**
@@ -273,7 +270,7 @@ H5P.CoursePresentation.prototype.resize = function () {
     for (var i = 0; i < instances.length; i++) {
       var instance = instances[i];
       if ((instance.preventResize === undefined || instance.preventResize === false) && instance.$ !== undefined) {
-        instance.$.trigger('resize');
+        instance.triggerH5PEvent('resize');
       }
     }
   }
@@ -340,7 +337,6 @@ H5P.CoursePresentation.prototype.addElement = function (element, $slide, index) 
   var defaults = {
     params: {
       displaySolutionsButton: this.showSolutionButtons,
-      postUserStatistics: false
     }
   };
 
@@ -875,9 +871,7 @@ H5P.CoursePresentation.prototype.jumpToSlide = function (slideNumber, noScroll) 
     if (this.slidesWithSolutions.length) {
       H5P.jQuery('.h5p-show-solutions', this.$container).show();
     }
-    else if (this.postUserStatistics === true) {
-      H5P.setFinished(this.contentId, 0, 0);
-    }
+    this.triggerH5PxAPIEvent('completed', H5P.getxAPIScoredResult(0, 0));
     if (this.hasAnswerElements) {
       H5P.jQuery('.h5p-eta-export', this.$container).show();
     }
@@ -888,8 +882,9 @@ H5P.CoursePresentation.prototype.jumpToSlide = function (slideNumber, noScroll) 
     this.editor.dnb.setContainer(this.$current);
     this.editor.dnb.blur();
   }
+  
+  this.triggerH5PEvent('resize'); // Triggered to resize elements.
 
-  this.$.trigger('resize'); // Triggered to resize elements.
   this.fitCT();
   return true;
 };
@@ -1039,9 +1034,7 @@ H5P.CoursePresentation.prototype.outputScoreStats = function (slideScores) {
     totalMaxScore += slideScores[i].maxScore;
   }
 
-  if (this.postUserStatistics === true) {
-    H5P.setFinished(this.contentId, totalScore, totalMaxScore);
-  }
+  this.triggerH5PxAPIEvent('completed', H5P.getxAPIScoredResult(totalScore, totalMaxScore));
 
   var percentScore = Math.round(totalScore / totalMaxScore * 100);
   var scoreMessage = this.l10n.goodScore;
